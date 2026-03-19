@@ -2,133 +2,254 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Carrito de Compras</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tienda</title>
 
 <style>
 body {
   font-family: Arial;
+  margin: 0;
   padding: 20px;
+  background: #f5f5f5;
 }
 
-h1 {
-  color: #333;
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
 }
 
 .producto {
-  border: 1px solid #ccc;
+  background: white;
+  border-radius: 10px;
   padding: 10px;
-  margin-bottom: 10px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.producto img {
+  width: 80%;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.precio {
+  color: green;
+  font-weight: bold;
 }
 
 button {
-  padding: 5px 10px;
-  margin-top: 5px;
+  margin: 5px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
   cursor: pointer;
 }
 
-#carrito {
-  margin-top: 20px;
-  border-top: 2px solid black;
-  padding-top: 10px;
+.agregar {
+  background: #007bff;
+  color: white;
+}
+
+/* BOTÓN FLOTANTE */
+.boton-carrito {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #007bff;
+  color: white;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contador {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 50%;
+}
+
+/* PANEL */
+.panel-carrito {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 320px;
+  height: 100%;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+  transition: 0.3s;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.panel-carrito.activo {
+  right: 0;
+}
+
+.total {
+  font-weight: bold;
+  margin-top: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🛒 Carrito de Compras</h1>
+<h1>🛍️ Tienda</h1>
 
-<!-- PRODUCTOS -->
+<div class="grid">
+
+<!-- PRODUCTO 1 -->
 <div class="producto">
-    <img src="./MarioBros.jpg" width="100">
-    <div class="info">
-    <h3>BLISTER MARIO BROS</h3>
-    <p class="precio">$3.30</p>
-    <button onclick="agregar('Blister Mario Bros', 3.30)">Agregar</button>
-  </div>
+<img src="MarioBros.jpg">
+<h3>Blister Mario Bros</h3>
+<p class="precio">$3.30</p>
+
+<button onclick="cambiarCantidad('mario', -1)">-</button>
+<span id="cant-mario">1</span>
+<button onclick="cambiarCantidad('mario', 1)">+</button>
+
+<br>
+<button class="agregar" onclick="agregar('mario','Blister Mario Bros',3.30)">
+Agregar
+</button>
 </div>
 
+<!-- PRODUCTO 2 -->
 <div class="producto">
-    <img src="./TresEnRaya.jpg" width="100">
-    <div class="info">
-    <h3>Juego 3 en Raya</h3>
-    <p class="precio">$8.25</p>
-    <button onclick="agregar('Tres en raya', 3.30)">Agregar</button>
-  </div>
+<img src="TresEnRaya.jpg">
+<h3>Juego 3 en Raya</h3>
+<p class="precio">$8.50</p>
 
+<button onclick="cambiarCantidad('raya', -1)">-</button>
+<span id="cant-raya">1</span>
+<button onclick="cambiarCantidad('raya', 1)">+</button>
+
+<br>
+<button class="agregar" onclick="agregar('raya','Juego 3 en Raya',8.50)">
+Agregar
+</button>
+</div>
 
 </div>
 
-<!-- CARRITO -->
-<div id="carrito">
-  <h2>🧾 Tu Pedido</h2>
-  <ul id="lista"></ul>
-  <h3 id="total">Total: $0</h3>
+<!-- BOTÓN -->
+<div class="boton-carrito" onclick="toggleCarrito()">
+🛒
+<div class="contador" id="contador">0</div>
+</div>
 
-  <button onclick="enviar()">📲 Enviar por WhatsApp</button>
+<!-- PANEL -->
+<div class="panel-carrito" id="panel">
+<h3>🛒 Carrito</h3>
+<ul id="lista"></ul>
+<div class="total" id="total">Total: $0</div>
+
+<button onclick="enviar()">📲 WhatsApp</button>
+<button onclick="vaciar()">🗑 Vaciar</button>
+<button onclick="toggleCarrito()">Cerrar</button>
 </div>
 
 <script>
-let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+let carrito = {};
+let cantidades = { mario:1, raya:1 };
 
-function guardar(){
-  localStorage.setItem("carrito", JSON.stringify(carrito));
+// CAMBIAR CANTIDAD
+function cambiarCantidad(id, cambio){
+  cantidades[id] += cambio;
+  if(cantidades[id] < 1) cantidades[id] = 1;
+
+  let el = document.getElementById("cant-" + id);
+  if(el) el.innerText = cantidades[id];
 }
 
-function agregar(nombre, precio){
-  let existe = carrito.find(p => p.nombre === nombre);
+// AGREGAR
+function agregar(id, nombre, precio){
+  let cantidad = cantidades[id] || 1;
 
-  if(existe){
-    existe.cantidad++;
+  if(!carrito[id]){
+    carrito[id] = { nombre, precio, cantidad };
   } else {
-    carrito.push({nombre, precio, cantidad: 1});
+    carrito[id].cantidad += cantidad;
   }
 
-  guardar();
   render();
 }
 
-function eliminar(nombre){
-  carrito = carrito.filter(p => p.nombre !== nombre);
-  guardar();
+// ELIMINAR
+function eliminar(id){
+  delete carrito[id];
   render();
 }
 
+// VACIAR
+function vaciar(){
+  carrito = {};
+  render();
+}
+
+// RENDER
 function render(){
   let lista = document.getElementById("lista");
+  let totalEl = document.getElementById("total");
+  let contador = document.getElementById("contador");
+
+  if(!lista || !totalEl || !contador) return;
+
   lista.innerHTML = "";
 
   let total = 0;
+  let count = 0;
 
-  carrito.forEach(p => {
+  Object.entries(carrito).forEach(([id, p]) => {
     total += p.precio * p.cantidad;
+    count += p.cantidad;
 
     let li = document.createElement("li");
     li.innerHTML = `
-      ${p.nombre} - $${p.precio} x ${p.cantidad}
-      <button onclick="eliminar('${p.nombre}')">❌</button>
+      ${p.nombre} x${p.cantidad}
+      <button onclick="eliminar('${id}')">❌</button>
     `;
     lista.appendChild(li);
   });
 
-  document.getElementById("total").innerText = "Total: $" + total.toFixed(2);
+  totalEl.innerText = "Total: $" + total.toFixed(2);
+  contador.innerText = count;
 }
 
+// ABRIR / CERRAR
+function toggleCarrito(){
+  let panel = document.getElementById("panel");
+  if(panel) panel.classList.toggle("activo");
+}
+
+// WHATSAPP
 function enviar(){
   let mensaje = "Hola, quiero comprar:\n\n";
 
-  carrito.forEach(p => {
-    mensaje += `- ${p.nombre} x${p.cantidad} ($${p.precio})\n`;
+  Object.values(carrito).forEach(p => {
+    mensaje += "- " + p.nombre + " x" + p.cantidad + "\n";
   });
 
-  let total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
-  mensaje += `\nTotal: $${total.toFixed(2)}`;
+  let total = Object.values(carrito)
+    .reduce((sum, p) => sum + p.precio * p.cantidad, 0);
 
-  let url = "https://wa.me/5930989528583?text=" + encodeURIComponent(mensaje);
-  window.open(url, '_blank');
+  mensaje += "\nTotal: $" + total.toFixed(2);
+
+  window.open("https://wa.me/5930999427170?text=" + encodeURIComponent(mensaje));
 }
-
-render();
 </script>
 
 </body>
