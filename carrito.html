@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Carrito de Compras</title>
+
+<style>
+body {
+  font-family: Arial;
+  padding: 20px;
+}
+
+h1 {
+  color: #333;
+}
+
+.producto {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 5px 10px;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+#carrito {
+  margin-top: 20px;
+  border-top: 2px solid black;
+  padding-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🛒 Carrito de Compras</h1>
+
+<!-- PRODUCTOS -->
+<div class="producto">
+    <img src="./Global/BLISTER DE MARIO BROS.jpg" width="100">
+    <div class="info">
+    <h3>BLISTER MARIO BROS</h3>
+    <p class="precio">$3.30</p>
+    <button onclick="agregar('BLISTER MARIO BROS', 3.30)">Agregar</button>
+  </div>
+</div>
+
+<div class="producto">
+    <img src="./Global/JUEGO TRES EN RAYA.jpg" width="100">
+    <div class="info">
+    <h3>BLISTER MARIO BROS</h3>
+    <p class="precio">$8.25</p>
+    <button onclick="agregar('Tres en raya', 3.30)">Agregar</button>
+  </div>
+
+
+</div>
+
+<!-- CARRITO -->
+<div id="carrito">
+  <h2>🧾 Tu Pedido</h2>
+  <ul id="lista"></ul>
+  <h3 id="total">Total: $0</h3>
+
+  <button onclick="enviar()">📲 Enviar por WhatsApp</button>
+</div>
+
+<script>
+let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
+function guardar(){
+  localStorage.setItem("carrito", JSON.stringify(carrito));
+}
+
+function agregar(nombre, precio){
+  let existe = carrito.find(p => p.nombre === nombre);
+
+  if(existe){
+    existe.cantidad++;
+  } else {
+    carrito.push({nombre, precio, cantidad: 1});
+  }
+
+  guardar();
+  render();
+}
+
+function eliminar(nombre){
+  carrito = carrito.filter(p => p.nombre !== nombre);
+  guardar();
+  render();
+}
+
+function render(){
+  let lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  let total = 0;
+
+  carrito.forEach(p => {
+    total += p.precio * p.cantidad;
+
+    let li = document.createElement("li");
+    li.innerHTML = `
+      ${p.nombre} - $${p.precio} x ${p.cantidad}
+      <button onclick="eliminar('${p.nombre}')">❌</button>
+    `;
+    lista.appendChild(li);
+  });
+
+  document.getElementById("total").innerText = "Total: $" + total.toFixed(2);
+}
+
+function enviar(){
+  let mensaje = "Hola, quiero comprar:\n\n";
+
+  carrito.forEach(p => {
+    mensaje += `- ${p.nombre} x${p.cantidad} ($${p.precio})\n`;
+  });
+
+  let total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+  mensaje += `\nTotal: $${total.toFixed(2)}`;
+
+  let url = "https://wa.me/5930999427170?text=" + encodeURIComponent(mensaje);
+  window.open(url, '_blank');
+}
+
+render();
+</script>
+
+</body>
+</html>
